@@ -21,8 +21,13 @@ def main():
                 except FileNotFoundError:
                     sys.stdout.write(f"cd: {args[0]}: No such file or directory\n")
         elif command.split()[0] == "echo":
-            _, *args = command.split()
-            sys.stdout.write(" ".join(args) + "\n")
+            if "\'" in command:
+                command = command.replace("echo ", "", 1)
+                string_splits = command.split("\'")
+                sys.stdout.write("".join(string_splits) + "\n")
+            else:
+                _, *args = command.split()
+                sys.stdout.write(" ".join(args) + "\n")
         elif command.split()[0] == "type":
             _, *args = command.split()
             for arg in args:
