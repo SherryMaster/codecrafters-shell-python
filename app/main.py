@@ -14,6 +14,8 @@ def main():
             if not args:
                 sys.stdout.write("cd: missing argument\n")
             else:
+                if args[0] == "~":
+                    args[0] = os.path.expanduser("~")
                 try:
                     os.chdir(args[0])
                 except FileNotFoundError:
