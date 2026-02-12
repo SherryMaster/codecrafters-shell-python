@@ -35,7 +35,7 @@ def main():
                     found = True
                     break
             if found:
-                subprocess.run([os.path.join(path, filename)] + command.split()[1:])
+                subprocess.run(" ".join([filename] + command.split()[1:]), shell=True)
             else:
                 sys.stdout.write(f"{command}: command not found\n")
 
