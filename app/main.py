@@ -1,5 +1,5 @@
 import sys
-
+import os
 
 def main():
     builtins = ["echo", "exit", "type"]
@@ -17,7 +17,15 @@ def main():
                 if arg in builtins:
                     sys.stdout.write(f"{arg} is a shell builtin\n")
                 else:
-                    sys.stdout.write(f"{arg}: not found\n")
+                    found = False
+                    for path in os.getenv("PATH", "").split(os.pathsep):
+                        if os.path.isfile(os.path.join(path, arg)) and os.access(os.path.join(path, arg), os.X_OK):
+                            found = True
+                            break
+                    if found:
+                        sys.stdout.write(f"{arg} is {os.path.join(path, arg)}\n")
+                    else:
+                        sys.stdout.write(f"{arg}: not found\n")
         else:
             sys.stdout.write(f"{command}: command not found\n")
 
