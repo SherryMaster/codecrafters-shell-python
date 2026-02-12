@@ -3,7 +3,7 @@ import os
 import subprocess
 
 def main():
-    builtins = ["echo", "exit", "type"]
+    builtins = ["echo", "exit", "type", "pwd"]
     while True:
         sys.stdout.write("$ ") 
         command = input()
@@ -27,6 +27,8 @@ def main():
                         sys.stdout.write(f"{arg} is {os.path.join(path, arg)}\n")
                     else:
                         sys.stdout.write(f"{arg}: not found\n")
+        elif command.split()[0] == "pwd":
+            sys.stdout.write(os.getcwd() + "\n")
         else:
             found = False
             filename = command.split()[0]
