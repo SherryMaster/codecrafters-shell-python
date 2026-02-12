@@ -3,7 +3,7 @@ import os
 import subprocess
 
 def main():
-    builtins = ["echo", "exit", "type", "pwd", "cd"]
+    builtins = ["echo", "exit", "type", "pwd", "cd", "cat"]
     while True:
         sys.stdout.write("$ ") 
         command = input()
@@ -24,7 +24,8 @@ def main():
             if "\'" in command:
                 command = command.replace("echo ", "", 1)
                 string_splits = command.split("\'")
-                sys.stdout.write("".join(string_splits) + "\n")
+                final_string = "".join(string_splits)
+                sys.stdout.write(final_string + "\n")
             else:
                 _, *args = command.split()
                 sys.stdout.write(" ".join(args) + "\n")
@@ -45,6 +46,8 @@ def main():
                         sys.stdout.write(f"{arg}: not found\n")
         elif command.split()[0] == "pwd":
             sys.stdout.write(os.getcwd() + "\n")
+        elif command.split()[0] == "cat":
+            subprocess.run(command, shell=True)
         else:
             found = False
             filename = command.split()[0]
