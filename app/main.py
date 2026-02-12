@@ -3,12 +3,21 @@ import os
 import subprocess
 
 def main():
-    builtins = ["echo", "exit", "type", "pwd"]
+    builtins = ["echo", "exit", "type", "pwd", "cd"]
     while True:
         sys.stdout.write("$ ") 
         command = input()
         if command.strip() == "exit":
             break
+        elif command.split()[0] == "cd":
+            _, *args = command.split()
+            if not args:
+                sys.stdout.write("cd: missing argument\n")
+            else:
+                try:
+                    os.chdir(args[0])
+                except FileNotFoundError:
+                    sys.stdout.write(f"cd: {args[0]}: No such file or directory\n")
         elif command.split()[0] == "echo":
             _, *args = command.split()
             sys.stdout.write(" ".join(args) + "\n")
