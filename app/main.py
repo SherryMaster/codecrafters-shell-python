@@ -48,7 +48,7 @@ def run_executable(command, args, output_file=None):
 def redirect_output(command, args, output_file):
     """Run the command and redirect its output to the specified file."""
     with open(output_file, 'w') as f:
-        result = subprocess.run([command, *args], stdout=f, stderr=subprocess.STDOUT)
+        result = subprocess.run([command, *args], stdout=f)
 
 def execute_builtin(command, args, output_file=None):
     """Execute a built-in command with optional output redirection."""
