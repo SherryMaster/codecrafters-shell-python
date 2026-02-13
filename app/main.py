@@ -1,64 +1,73 @@
 import sys
 import os
 import subprocess
+import shutil
+import shlex
+
+def exit_command(code=0):
+    """Exit the shell with the given exit code."""
+    os._exit(code)
+
+def echo_command(*args):
+    """Print the given arguments to standard output."""
+    print(" ".join(args))
+
+def type_command(command):
+    """Determine if the given command is a built-in or an executable in PATH."""
+    if command in commands:
+        print(f"{command} is a shell builtin")
+    elif shutil.which(command) is not None:
+        print(f"{command} is {shutil.which(command)}")
+    else:
+        print(f"{command}: not found")
+
+def pwd_command():
+    """Print the current working directory."""
+    print(os.getcwd())
+
+def cd_command(path):
+    """Change the current working directory to the given path."""
+    if os.path.exists(path) and os.path.isdir(path):
+        os.chdir(path)
+    elif path == "~":
+        os.chdir(os.path.expanduser("~"))
+    else:
+        print(f"cd: {path}: No such file or directory")
+
+def run_executable(command, args):
+    """Run the given command as an executable."""
+    try:
+        result = subprocess.run([command, *args])
+    except Exception as e:
+        print(f"{command}: {e}")
+
+
+commands = {
+    "exit": exit_command,
+    "echo": echo_command,
+    "type": type_command,
+    "pwd": pwd_command,
+    "cd": cd_command,
+}
 
 def main():
-    builtins = ["echo", "exit", "type", "pwd", "cd", "cat"]
     while True:
-        sys.stdout.write("$ ") 
-        command = input()
-        if command.strip() == "exit":
+        try:
+            user_input = input("$ ")
+            if not user_input.strip():
+                continue
+            parts = shlex.split(user_input)
+            command = parts[0]
+            args = parts[1:]
+
+            if command in commands:
+                commands[command](*args)
+            else:
+                run_executable(command, args)
+        except EOFError:
             break
-        elif command.split()[0] == "cd":
-            _, *args = command.split()
-            if not args:
-                sys.stdout.write("cd: missing argument\n")
-            else:
-                if args[0] == "~":
-                    args[0] = os.path.expanduser("~")
-                try:
-                    os.chdir(args[0])
-                except FileNotFoundError:
-                    sys.stdout.write(f"cd: {args[0]}: No such file or directory\n")
-        elif command.split()[0] == "echo":
-            if "\'" in command:
-                command = command.replace("echo ", "", 1)
-                string_splits = command.split("\'")
-                final_string = "".join(string_splits)
-                sys.stdout.write(final_string + "\n")
-            else:
-                _, *args = command.split()
-                sys.stdout.write(" ".join(args) + "\n")
-        elif command.split()[0] == "type":
-            _, *args = command.split()
-            for arg in args:
-                if arg in builtins:
-                    sys.stdout.write(f"{arg} is a shell builtin\n")
-                else:
-                    found = False
-                    for path in os.getenv("PATH", "").split(os.pathsep):
-                        if os.path.isfile(os.path.join(path, arg)) and os.access(os.path.join(path, arg), os.X_OK):
-                            found = True
-                            break
-                    if found:
-                        sys.stdout.write(f"{arg} is {os.path.join(path, arg)}\n")
-                    else:
-                        sys.stdout.write(f"{arg}: not found\n")
-        elif command.split()[0] == "pwd":
-            sys.stdout.write(os.getcwd() + "\n")
-        elif command.split()[0] == "cat":
-            subprocess.run(command, shell=True)
-        else:
-            found = False
-            filename = command.split()[0]
-            for path in os.getenv("PATH", "").split(os.pathsep):
-                if os.path.isfile(os.path.join(path, filename)) and os.access(os.path.join(path, filename), os.X_OK):
-                    found = True
-                    break
-            if found:
-                subprocess.run(" ".join([filename] + command.split()[1:]), shell=True)
-            else:
-                sys.stdout.write(f"{command}: command not found\n")
+        except Exception as e:
+            print(f"Error: {e}")
 
 if __name__ == "__main__":
     main()
