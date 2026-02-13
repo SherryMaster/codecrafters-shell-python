@@ -34,13 +34,20 @@ def cd_command(path):
     else:
         print(f"cd: {path}: No such file or directory")
 
-def run_executable(command, args):
+def run_executable(command, args, output_file=None):
     """Run the given command as an executable."""
     try:
-        result = subprocess.run([command, *args])
+        if output_file:
+            redirect_output(command, args, output_file)
+        else:
+            result = subprocess.run([command, *args])
     except Exception as e:
         print(f"{command}: {e}")
 
+def redirect_output(command, args, output_file):
+    """Run the command and redirect its output to the specified file."""
+    with open(output_file, 'w') as f:
+        result = subprocess.run([command, *args], stdout=f, stderr=subprocess.STDOUT)
 
 commands = {
     "exit": exit_command,
@@ -57,8 +64,14 @@ def main():
         line = input()
         if not line:
             continue
-
-        command_with_args = shlex.split(line)
+        
+        if ">" in line:
+            command_part, output_file = line.split(">", 1)
+            command_with_args = shlex.split(command_part)
+            output_file = output_file.strip()
+        else:
+            command_with_args = shlex.split(line)
+            output_file = None
 
         if not command_with_args:
             continue
@@ -66,7 +79,7 @@ def main():
         command = command_with_args[0]
         
         if shutil.which(command) is not None:
-            run_executable(command, command_with_args[1:])
+            run_executable(command, command_with_args[1:], output_file=output_file)
         elif command not in commands:
             print(f"{command}: command not found")
         else:
