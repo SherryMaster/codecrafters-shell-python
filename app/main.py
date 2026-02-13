@@ -3,6 +3,7 @@ import os
 import subprocess
 import shutil
 import shlex
+import re
 
 def exit_command(code=0):
     """Exit the shell with the given exit code."""
@@ -49,6 +50,18 @@ def redirect_output(command, args, output_file):
     with open(output_file, 'w') as f:
         result = subprocess.run([command, *args], stdout=f, stderr=subprocess.STDOUT)
 
+def execute_builtin(command, args, output_file=None):
+    """Execute a built-in command with optional output redirection."""
+    if output_file:
+        # Redirect stdout to file
+        original_stdout = sys.stdout
+        with open(output_file, 'w') as f:
+            sys.stdout = f
+            commands[command](*args)
+            sys.stdout = original_stdout
+    else:
+        commands[command](*args)
+
 commands = {
     "exit": exit_command,
     "echo": echo_command,
@@ -65,10 +78,13 @@ def main():
         if not line:
             continue
         
-        if ">" in line:
-            command_part, output_file = line.split(">", 1)
+        # Match file descriptor (optional digit) followed by >
+        redirect_match = re.search(r'\s*\d*>\s*', line)
+        
+        if redirect_match:
+            command_part = line[:redirect_match.start()].strip()
+            output_file = line[redirect_match.end():].strip()
             command_with_args = shlex.split(command_part)
-            output_file = output_file.strip()
         else:
             command_with_args = shlex.split(line)
             output_file = None
@@ -83,7 +99,7 @@ def main():
         elif command not in commands:
             print(f"{command}: command not found")
         else:
-            commands[command](*command_with_args[1:])
+            execute_builtin(command, command_with_args[1:], output_file)
 
 if __name__ == "__main__":
     main()
