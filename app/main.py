@@ -52,22 +52,25 @@ commands = {
 
 def main():
     while True:
-        try:
-            user_input = input("$ ")
-            if not user_input.strip():
-                continue
-            parts = shlex.split(user_input)
-            command = parts[0]
-            args = parts[1:]
+        sys.stdout.write("$ ")
 
-            if command in commands:
-                commands[command](*args)
-            else:
-                run_executable(command, args)
-        except EOFError:
-            break
-        except Exception as e:
-            print(f"Error: {e}")
+        line = input()
+        if not line:
+            continue
+
+        command_with_args = shlex.split(line)
+
+        if not command_with_args:
+            continue
+        
+        command = command_with_args[0]
+        
+        if shutil.which(command) is not None:
+            run_executable(command, command_with_args[1:])
+        elif command not in commands:
+            print(f"{command}: command not found")
+        else:
+            commands[command](*command_with_args[1:])
 
 if __name__ == "__main__":
     main()
