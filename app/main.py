@@ -76,26 +76,88 @@ def run_pipeline(pipeline_parts):
     """Execute a pipeline of commands connected by pipes."""
     num_cmds = len(pipeline_parts)
     processes = []
+    builtin_pids = []
 
     for i, part in enumerate(pipeline_parts):
         cmd_args = shlex.split(part.strip())
         if not cmd_args:
             continue
 
+        cmd_name = cmd_args[0]
+        is_builtin = cmd_name in commands
+
         stdin_pipe = processes[-1].stdout if i > 0 else None
         stdout_pipe = subprocess.PIPE if i < num_cmds - 1 else None
 
-        proc = subprocess.Popen(
-            cmd_args,
-            stdin=stdin_pipe,
-            stdout=stdout_pipe,
-        )
-        processes.append(proc)
+        if is_builtin:
+            # For built-in commands, we need to fork so we can connect
+            # their stdin/stdout to the pipeline pipes.
+            read_fd = None
+            write_fd = None
 
-        # Close the previous process's stdout in the parent so that
-        # the pipe can signal EOF when the writer finishes.
-        if i > 0:
-            processes[-2].stdout.close()
+            # Set up the stdout pipe for this builtin if it's not the last cmd
+            if i < num_cmds - 1:
+                r, w = os.pipe()
+                read_fd = r
+                write_fd = w
+
+            pid = os.fork()
+            if pid == 0:
+                # Child process
+                # Redirect stdin if we have input from a previous command
+                if stdin_pipe is not None:
+                    os.dup2(stdin_pipe.fileno(), 0)
+                    stdin_pipe.close()
+
+                # Redirect stdout if not the last command
+                if write_fd is not None:
+                    os.close(read_fd)
+                    os.dup2(write_fd, 1)
+                    os.close(write_fd)
+
+                # Re-bind sys.stdout/sys.stdin to the new fds
+                sys.stdin = os.fdopen(0, 'r')
+                sys.stdout = os.fdopen(1, 'w')
+
+                commands[cmd_name](*cmd_args[1:])
+                sys.stdout.flush()
+                os._exit(0)
+            else:
+                # Parent process
+                # Close the stdin pipe from previous process in parent
+                if stdin_pipe is not None:
+                    stdin_pipe.close()
+
+                if write_fd is not None:
+                    os.close(write_fd)
+                    # Create a file object from read_fd so it looks like
+                    # a Popen.stdout for the next stage
+                    read_file = os.fdopen(read_fd, 'r')
+                else:
+                    read_file = None
+
+                # Create a simple wrapper to mimic Popen interface
+                class FakeProc:
+                    def __init__(self, pid, stdout):
+                        self.pid = pid
+                        self.stdout = stdout
+                    def wait(self):
+                        os.waitpid(self.pid, 0)
+
+                processes.append(FakeProc(pid, read_file))
+        else:
+            # External command
+            proc = subprocess.Popen(
+                cmd_args,
+                stdin=stdin_pipe,
+                stdout=stdout_pipe,
+            )
+            processes.append(proc)
+
+            # Close the previous process's stdout in the parent so that
+            # the pipe can signal EOF when the writer finishes.
+            if i > 0 and stdin_pipe is not None:
+                stdin_pipe.close()
 
     # Wait for all processes to finish
     for proc in processes:
