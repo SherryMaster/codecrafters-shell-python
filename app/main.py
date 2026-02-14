@@ -87,7 +87,7 @@ def main():
             continue
         
         # Match file descriptor (optional digit) followed by >
-        redirect_match = re.search(r'\s*\d*>\s*', line)
+        redirect_match = re.search(r'\s*(\d*)>\s*', line)
         
         if redirect_match:
             command_part = line[:redirect_match.start()].strip()
@@ -98,6 +98,7 @@ def main():
         else:
             command_with_args = shlex.split(line)
             output_file = None
+            fd = "1" 
 
         if not command_with_args:
             continue
