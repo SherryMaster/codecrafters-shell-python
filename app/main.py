@@ -35,30 +35,38 @@ def cd_command(path):
     else:
         print(f"cd: {path}: No such file or directory")
 
-def run_executable(command, args, output_file=None):
+def run_executable(command, args, output_file=None, fd="1"):
     """Run the given command as an executable."""
     try:
         if output_file:
-            redirect_output(command, args, output_file)
+            redirect_output(command, args, output_file, fd=fd)
         else:
             result = subprocess.run([command, *args])
     except Exception as e:
         print(f"{command}: {e}")
 
-def redirect_output(command, args, output_file):
+def redirect_output(command, args, output_file, fd="1"):
     """Run the command and redirect its output to the specified file."""
     with open(output_file, 'w') as f:
-        result = subprocess.run([command, *args], stdout=f)
+        if fd == "1":
+            result = subprocess.run([command, *args], stdout=f)
+        elif fd == "2":
+            result = subprocess.run([command, *args], stderr=f)
 
-def execute_builtin(command, args, output_file=None):
+def execute_builtin(command, args, output_file=None, fd="1"):
     """Execute a built-in command with optional output redirection."""
     if output_file:
-        # Redirect stdout to file
+        # Redirect stdout or stderr to file
         original_stdout = sys.stdout
+        original_stderr = sys.stderr
         with open(output_file, 'w') as f:
-            sys.stdout = f
+            if fd == "1":
+                sys.stdout = f
+            elif fd == "2":
+                sys.stderr = f
             commands[command](*args)
             sys.stdout = original_stdout
+            sys.stderr = original_stderr
     else:
         commands[command](*args)
 
@@ -85,6 +93,8 @@ def main():
             command_part = line[:redirect_match.start()].strip()
             output_file = line[redirect_match.end():].strip()
             command_with_args = shlex.split(command_part)
+            
+            fd = redirect_match.group(1) if redirect_match.group(1) else '1'
         else:
             command_with_args = shlex.split(line)
             output_file = None
@@ -95,11 +105,11 @@ def main():
         command = command_with_args[0]
         
         if shutil.which(command) is not None:
-            run_executable(command, command_with_args[1:], output_file=output_file)
+            run_executable(command, command_with_args[1:], output_file=output_file, fd=fd)
         elif command not in commands:
             print(f"{command}: command not found")
         else:
-            execute_builtin(command, command_with_args[1:], output_file)
+            execute_builtin(command, command_with_args[1:], output_file=output_file, fd=fd)
 
 if __name__ == "__main__":
     main()
