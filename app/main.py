@@ -88,7 +88,7 @@ def main():
             continue
         
         # Match file descriptor (optional digit) followed by >
-        redirect_match = re.search(r'\s*(\d*)>\s*(>>)?\s*(.*)', line)
+        redirect_match = re.search(r'\s*(\d*)(>>|>)\s*(.*)', line)
         
         if redirect_match:
             command_part = line[:redirect_match.start()].strip()
@@ -96,7 +96,7 @@ def main():
             command_with_args = shlex.split(command_part)
             
             fd = redirect_match.group(1) if redirect_match.group(1) else '1'
-            append = redirect_match.group(2) is not None
+            append = redirect_match.group(2) == ">>"
         else:
             command_with_args = shlex.split(line)
             output_file = None
