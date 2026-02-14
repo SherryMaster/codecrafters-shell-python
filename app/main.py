@@ -72,6 +72,35 @@ def execute_builtin(command, args, output_file=None, fd="1", append=False):
     else:
         commands[command](*args)
 
+def run_pipeline(pipeline_parts):
+    """Execute a pipeline of commands connected by pipes."""
+    num_cmds = len(pipeline_parts)
+    processes = []
+
+    for i, part in enumerate(pipeline_parts):
+        cmd_args = shlex.split(part.strip())
+        if not cmd_args:
+            continue
+
+        stdin_pipe = processes[-1].stdout if i > 0 else None
+        stdout_pipe = subprocess.PIPE if i < num_cmds - 1 else None
+
+        proc = subprocess.Popen(
+            cmd_args,
+            stdin=stdin_pipe,
+            stdout=stdout_pipe,
+        )
+        processes.append(proc)
+
+        # Close the previous process's stdout in the parent so that
+        # the pipe can signal EOF when the writer finishes.
+        if i > 0:
+            processes[-2].stdout.close()
+
+    # Wait for all processes to finish
+    for proc in processes:
+        proc.wait()
+
 def complete_command(text, state):
     """Auto-completion function for the shell."""
     # Build matches once per completion cycle (state == 0)
@@ -153,6 +182,12 @@ def main():
         if not line:
             continue
         
+        # Check for pipeline (|) operator
+        if '|' in line:
+            pipeline_parts = line.split('|')
+            run_pipeline(pipeline_parts)
+            continue
+
         # Match file descriptor (optional digit) followed by >
         redirect_match = re.search(r'\s*(\d*)(>>|>)\s*(.*)', line)
         
