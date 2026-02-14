@@ -97,11 +97,22 @@ def complete_command(text, state):
         if not options:
             return None
 
-        # Single match -> let readline insert it
+        # Single match -> let readline insert it with trailing space
         if len(options) == 1:
             return options[0] + " "
 
-        # Multiple matches: first TAB rings bell, second TAB prints list
+        # Multiple matches: compute the longest common prefix (LCP)
+        lcp = os.path.commonprefix(options)
+
+        if len(lcp) > len(text):
+            # LCP is longer than what the user typed -> complete to LCP
+            # Return the LCP; no trailing space since multiple matches remain
+            complete_command._last_tab_text = None
+            complete_command._last_tab_bell = False
+            return lcp
+
+        # LCP == text: no progress can be made
+        # First TAB: ring bell, second TAB: print list
         last_text = getattr(complete_command, "_last_tab_text", None)
         last_bell = getattr(complete_command, "_last_tab_bell", False)
 
