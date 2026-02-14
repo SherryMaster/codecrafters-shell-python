@@ -36,6 +36,11 @@ def cd_command(path):
     else:
         print(f"cd: {path}: No such file or directory")
 
+def history_command():
+    """List previously executed commands."""
+    for i in range(1, readline.get_current_history_length() + 1):
+        print(f"    {i}  {readline.get_history_item(i)}")
+
 def run_executable(command, args, output_file=None, fd="1", append=False):
     """Run the given command as an executable."""
     try:
@@ -231,6 +236,7 @@ commands = {
     "type": type_command,
     "pwd": pwd_command,
     "cd": cd_command,
+    "history": history_command,
 }
 
 def main():
@@ -243,7 +249,9 @@ def main():
         line = input()
         if not line:
             continue
-        
+
+        readline.add_history(line)
+
         # Check for pipeline (|) operator
         if '|' in line:
             pipeline_parts = line.split('|')
