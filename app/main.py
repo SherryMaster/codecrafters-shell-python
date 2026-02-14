@@ -77,8 +77,12 @@ def complete_command(text, state):
     options = [cmd for cmd in commands if cmd.startswith(text)]
     
     # Include commands found in PATH
-    path_commands = [cmd for cmd in os.listdir(os.path.join(os.environ["PATH"].split(os.pathsep)[0])) if cmd.startswith(text)]
-    options.extend(path_commands)
+    for path in os.environ["PATH"].split(os.pathsep):
+        try:
+            path_commands = [cmd for cmd in os.listdir(path) if cmd.startswith(text) and os.access(os.path.join(path, cmd), os.X_OK)]
+            options.extend(path_commands)
+        except FileNotFoundError:
+            continue  # Ignore directories that do not exist
 
     if state < len(options):
         return options[state] + " "
