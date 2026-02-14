@@ -83,7 +83,19 @@ def complete_command(text, state):
             options.extend(path_commands)
         except FileNotFoundError:
             continue  # Ignore directories that do not exist
-
+    
+    if state == 0:
+        # First TAB: ring the bell
+        sys.stdout.write('\x07')
+        return None # Return None to indicate no completion
+    elif state == 1:
+        # Second TAB press: print all matching executables
+        if options:
+            options = sorted(set(options))  # Remove duplicates and sort
+            print("\n" + "  ".join(options))  # Print matches
+            sys.stdout.write(f"$ {text}")  # Reprint the prompt with the original command
+            return None  # Return None to indicate no completion
+    
     if state < len(options):
         return options[state] + " "
     else:
