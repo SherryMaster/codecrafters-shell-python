@@ -88,7 +88,7 @@ def main():
             continue
         
         # Match file descriptor (optional digit) followed by >
-        redirect_match = re.search(r'\s*(\d*)>(\s*|>>)\s*', line)
+        redirect_match = re.search(r'\s*(\d*)>\s*(>>)?\s*(.*)', line)
         
         if redirect_match:
             command_part = line[:redirect_match.start()].strip()
