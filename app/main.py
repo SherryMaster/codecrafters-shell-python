@@ -76,7 +76,7 @@ def complete_command(text, state):
     """Auto-completion function for the shell."""
     options = [cmd for cmd in commands if cmd.startswith(text)]
     if state < len(options):
-        return options[state]
+        return options[state] + " "
     else:
         return None
 
