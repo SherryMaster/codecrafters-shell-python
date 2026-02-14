@@ -4,6 +4,7 @@ import subprocess
 import shutil
 import shlex
 import re
+import readline
 
 def exit_command(code=0):
     """Exit the shell with the given exit code."""
@@ -71,6 +72,14 @@ def execute_builtin(command, args, output_file=None, fd="1", append=False):
     else:
         commands[command](*args)
 
+def complete_command(text, state):
+    """Auto-completion function for the shell."""
+    options = [cmd for cmd in commands if cmd.startswith(text)]
+    if state < len(options):
+        return options[state]
+    else:
+        return None
+
 commands = {
     "exit": exit_command,
     "echo": echo_command,
@@ -80,6 +89,9 @@ commands = {
 }
 
 def main():
+    readline.set_completer(complete_command) # Set the auto-completion function
+    readline.parse_and_bind("tab: complete") # Enable tab completion
+    
     while True:
         sys.stdout.write("$ ")
 
