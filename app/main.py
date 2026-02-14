@@ -74,32 +74,54 @@ def execute_builtin(command, args, output_file=None, fd="1", append=False):
 
 def complete_command(text, state):
     """Auto-completion function for the shell."""
-    options = [cmd for cmd in commands if cmd.startswith(text)]
-    
-    # Include commands found in PATH
-    for path in os.environ["PATH"].split(os.pathsep):
-        try:
-            path_commands = [cmd for cmd in os.listdir(path) if cmd.startswith(text) and os.access(os.path.join(path, cmd), os.X_OK)]
-            options.extend(path_commands)
-        except FileNotFoundError:
-            continue  # Ignore directories that do not exist
-    
+    # Build matches once per completion cycle (state == 0)
     if state == 0:
-        # First TAB: ring the bell
-        sys.stdout.write('\x07')
-        return None # Return None to indicate no completion
-    elif state == 1:
-        # Second TAB press: print all matching executables
-        if options:
-            options = sorted(set(options))  # Remove duplicates and sort
-            print("\n" + "  ".join(options))  # Print matches
-            sys.stdout.write(f"$ {text}")  # Reprint the prompt with the original command
-            return None  # Return None to indicate no completion
-    
-    if state < len(options):
-        return options[state] + " "
-    else:
+        options = [cmd for cmd in commands if cmd.startswith(text)]
+
+        # Include commands found in PATH
+        for path in os.environ["PATH"].split(os.pathsep):
+            try:
+                path_commands = [
+                    cmd for cmd in os.listdir(path)
+                    if cmd.startswith(text) and os.access(os.path.join(path, cmd), os.X_OK)
+                ]
+                options.extend(path_commands)
+            except FileNotFoundError:
+                continue  # Ignore directories that do not exist
+
+        options = sorted(set(options))
+        complete_command._last_matches = options
+        complete_command._last_text = text
+
+        # No matches -> nothing to do
+        if not options:
+            return None
+
+        # Single match -> let readline insert it
+        if len(options) == 1:
+            return options[0] + " "
+
+        # Multiple matches: first TAB rings bell, second TAB prints list
+        last_text = getattr(complete_command, "_last_tab_text", None)
+        last_bell = getattr(complete_command, "_last_tab_bell", False)
+
+        if last_text == text and last_bell:
+            # Second TAB: print matches
+            buffer = readline.get_line_buffer()
+            sys.stdout.write("\n" + "  ".join(options) + "\n$ " + buffer)
+            sys.stdout.flush()
+            complete_command._last_tab_bell = False
+        else:
+            # First TAB: ring bell
+            sys.stdout.write("\x07")
+            sys.stdout.flush()
+            complete_command._last_tab_text = text
+            complete_command._last_tab_bell = True
+
         return None
+
+    # For multiple matches we suppress readline insertion on subsequent states
+    return None
 
 commands = {
     "exit": exit_command,
