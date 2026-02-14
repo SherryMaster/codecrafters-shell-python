@@ -92,11 +92,11 @@ def main():
         
         if redirect_match:
             command_part = line[:redirect_match.start()].strip()
-            output_file = line[redirect_match.end():].strip()
+            output_file = redirect_match.group(3).strip()
             command_with_args = shlex.split(command_part)
             
             fd = redirect_match.group(1) if redirect_match.group(1) else '1'
-            append = ">>" in redirect_match.group(2)
+            append = redirect_match.group(2) is not None
         else:
             command_with_args = shlex.split(line)
             output_file = None
