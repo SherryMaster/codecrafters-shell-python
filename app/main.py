@@ -75,6 +75,11 @@ def execute_builtin(command, args, output_file=None, fd="1", append=False):
 def complete_command(text, state):
     """Auto-completion function for the shell."""
     options = [cmd for cmd in commands if cmd.startswith(text)]
+    
+    # Include commands found in PATH
+    path_commands = [cmd for cmd in os.listdir(os.path.join(os.environ["PATH"].split(os.pathsep)[0])) if cmd.startswith(text)]
+    options.extend(path_commands)
+
     if state < len(options):
         return options[state] + " "
     else:
