@@ -39,9 +39,23 @@ def cd_command(path):
     else:
         print(f"cd: {path}: No such file or directory")
 
-def history_command():
+def history_command(*args):
     """List previously executed commands."""
-    for i in range(1, readline.get_current_history_length() + 1):
+    total = readline.get_current_history_length()
+
+    limit = None
+    if len(args) >= 1:
+        try:
+            limit = int(args[0])
+        except ValueError:
+            limit = None
+
+    if limit is None or limit < 0:
+        start = 1
+    else:
+        start = max(1, total - limit + 1)
+
+    for i in range(start, total + 1):
         print(f"    {i}  {readline.get_history_item(i)}")
 
 def run_executable(command, args, output_file=None, fd="1", append=False):
