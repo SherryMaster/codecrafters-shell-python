@@ -4,7 +4,10 @@ import subprocess
 import shutil
 import shlex
 import re
-import readline
+try:
+    import readline
+except ImportError:  # Windows: use pyreadline3
+    import pyreadline3 as readline
 
 def exit_command(code=0):
     """Exit the shell with the given exit code."""
@@ -242,6 +245,8 @@ commands = {
 def main():
     readline.set_completer(complete_command) # Set the auto-completion function
     readline.parse_and_bind("tab: complete") # Enable tab completion
+    if hasattr(readline, "set_auto_history"):
+        readline.set_auto_history(False)
     
     while True:
         sys.stdout.write("$ ")
