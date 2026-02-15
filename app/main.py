@@ -41,6 +41,19 @@ def cd_command(path):
 
 def history_command(*args):
     """List previously executed commands."""
+    if len(args) >= 2 and args[0] == "-r":
+        history_path = args[1]
+        try:
+            with open(history_path, "r", encoding="utf-8") as history_file:
+                for raw_line in history_file:
+                    line = raw_line.rstrip("\n")
+                    if line == "":
+                        continue
+                    readline.add_history(line)
+        except OSError as e:
+            print(f"history: {history_path}: {e}")
+        return
+
     total = readline.get_current_history_length()
 
     limit = None
