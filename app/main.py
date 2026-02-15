@@ -9,8 +9,24 @@ try:
 except ImportError:  # Windows: use pyreadline3
     import pyreadline3 as readline
 
+def write_history_file(history_path):
+    """Write the in-memory history to the given history file path."""
+    try:
+        total = readline.get_current_history_length()
+        with open(history_path, "w", encoding="utf-8") as history_file:
+            for i in range(1, total + 1):
+                item = readline.get_history_item(i)
+                if item is None:
+                    item = ""
+                history_file.write(item + "\n")
+    except OSError as e:
+        print(f"history: {history_path}: {e}")
+
 def exit_command(code=0):
     """Exit the shell with the given exit code."""
+    history_path = _history_path or os.environ.get("HISTFILE")
+    if history_path:
+        write_history_file(history_path)
     os._exit(code)
 
 def echo_command(*args):
@@ -314,6 +330,7 @@ commands = {
 }
 
 _history_append_index = 0
+_history_path = None
 
 def main():
     readline.set_completer(complete_command) # Set the auto-completion function
@@ -337,8 +354,9 @@ def main():
         except OSError as e:
             print(f"history: {history_path}: {e}")
 
-        global _history_append_index
+        global _history_append_index, _history_path
         _history_append_index = readline.get_current_history_length()
+        _history_path = history_path
     
     while True:
         line = input("$ ")
