@@ -322,6 +322,23 @@ def main():
     readline.parse_and_bind("set keymap emacs")
     if hasattr(readline, "set_auto_history"):
         readline.set_auto_history(False)
+
+    history_path = os.environ.get("HISTFILE")
+    if history_path:
+        try:
+            with open(history_path, "r", encoding="utf-8") as history_file:
+                for raw_line in history_file:
+                    line = raw_line.rstrip("\n")
+                    if line == "":
+                        continue
+                    readline.add_history(line)
+        except FileNotFoundError:
+            pass
+        except OSError as e:
+            print(f"history: {history_path}: {e}")
+
+        global _history_append_index
+        _history_append_index = readline.get_current_history_length()
     
     while True:
         line = input("$ ")
