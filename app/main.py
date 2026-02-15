@@ -107,11 +107,23 @@ def execute_builtin(command, args, output_file=None, fd="1", append=False):
     else:
         commands[command](*args)
 
-def run_pipeline(pipeline_parts):
+def run_pipeline(line):
     """Execute a pipeline of commands connected by pipes."""
+    pipeline_parts = line.split('|')
     num_cmds = len(pipeline_parts)
     processes = []
-    builtin_pids = []
+
+    # If the pipeline has no builtins, delegate to the system shell.
+    has_builtin = False
+    for part in pipeline_parts:
+        cmd_args = shlex.split(part.strip())
+        if cmd_args and cmd_args[0] in commands:
+            has_builtin = True
+            break
+
+    if not has_builtin:
+        subprocess.run(line, shell=True)
+        return
 
     for i, part in enumerate(pipeline_parts):
         cmd_args = shlex.split(part.strip())
@@ -286,8 +298,7 @@ def main():
 
         # Check for pipeline (|) operator
         if '|' in line:
-            pipeline_parts = line.split('|')
-            run_pipeline(pipeline_parts)
+            run_pipeline(line)
             continue
 
         # Match file descriptor (optional digit) followed by >
