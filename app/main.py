@@ -259,13 +259,13 @@ commands = {
 def main():
     readline.set_completer(complete_command) # Set the auto-completion function
     readline.parse_and_bind("tab: complete") # Enable tab completion
+    readline.parse_and_bind("set editing-mode emacs")
+    readline.parse_and_bind("set keymap emacs")
     if hasattr(readline, "set_auto_history"):
         readline.set_auto_history(False)
     
     while True:
-        sys.stdout.write("$ ")
-
-        line = input()
+        line = input("$ ")
         if not line:
             continue
 
