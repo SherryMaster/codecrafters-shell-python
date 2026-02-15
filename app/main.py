@@ -54,6 +54,21 @@ def history_command(*args):
             print(f"history: {history_path}: {e}")
         return
 
+    if len(args) >= 2 and args[0] == "-w":
+        history_path = args[1]
+        try:
+            total = readline.get_current_history_length()
+            with open(history_path, "w", encoding="utf-8") as history_file:
+                for i in range(1, total + 1):
+                    item = readline.get_history_item(i)
+                    if item is None:
+                        item = ""
+                    history_file.write(item + "\n")
+                history_file.write("\n")
+        except OSError as e:
+            print(f"history: {history_path}: {e}")
+        return
+
     total = readline.get_current_history_length()
 
     limit = None
