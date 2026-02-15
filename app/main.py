@@ -64,7 +64,6 @@ def history_command(*args):
                     if item is None:
                         item = ""
                     history_file.write(item + "\n")
-                history_file.write("\n")
         except OSError as e:
             print(f"history: {history_path}: {e}")
         return
