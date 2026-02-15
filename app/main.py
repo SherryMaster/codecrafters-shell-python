@@ -41,6 +41,7 @@ def cd_command(path):
 
 def history_command(*args):
     """List previously executed commands."""
+    global _history_append_index
     if len(args) >= 2 and args[0] == "-r":
         history_path = args[1]
         try:
@@ -50,6 +51,23 @@ def history_command(*args):
                     if line == "":
                         continue
                     readline.add_history(line)
+        except OSError as e:
+            print(f"history: {history_path}: {e}")
+        return
+
+    if len(args) >= 2 and args[0] == "-a":
+        history_path = args[1]
+        try:
+            total = readline.get_current_history_length()
+            start = max(1, _history_append_index + 1)
+            if start <= total:
+                with open(history_path, "a", encoding="utf-8") as history_file:
+                    for i in range(start, total + 1):
+                        item = readline.get_history_item(i)
+                        if item is None:
+                            item = ""
+                        history_file.write(item + "\n")
+            _history_append_index = total
         except OSError as e:
             print(f"history: {history_path}: {e}")
         return
@@ -294,6 +312,8 @@ commands = {
     "cd": cd_command,
     "history": history_command,
 }
+
+_history_append_index = 0
 
 def main():
     readline.set_completer(complete_command) # Set the auto-completion function
